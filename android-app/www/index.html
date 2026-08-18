@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#0e141b" />
+  <title>Przewodnik — Hiszpania</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header class="topbar" id="topbar">
+    <div class="topbar__title">
+      <span class="topbar__flag" aria-hidden="true">🇪🇸</span>
+      <span>Hiszpania</span>
+      <span class="topbar__sub">wrzesień 2025</span>
+    </div>
+    <div class="zoom" role="group" aria-label="Rozmiar tekstu">
+      <button class="zoom__btn" id="zoomOut" aria-label="Zmniejsz tekst">A−</button>
+      <button class="zoom__btn zoom__btn--strong" id="zoomIn" aria-label="Zwiększ tekst">A+</button>
+    </div>
+  </header>
+
+  <main class="app" id="app">
+    <div class="splash" id="splash">
+      <div class="splash__inner">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Ładowanie przewodnika…</p>
+      </div>
+    </div>
+  </main>
+
+  <nav class="tabbar" id="tabbar" aria-label="Nawigacja główna">
+    <button class="tab is-active" data-tab="home">
+      <span class="tab__icon" aria-hidden="true">🏠</span>
+      <span class="tab__label">Start</span>
+    </button>
+    <button class="tab" data-tab="days">
+      <span class="tab__icon" aria-hidden="true">📅</span>
+      <span class="tab__label">Dni</span>
+    </button>
+    <button class="tab" data-tab="checklists">
+      <span class="tab__icon" aria-hidden="true">✅</span>
+      <span class="tab__label">Listy</span>
+    </button>
+    <button class="tab" data-tab="info">
+      <span class="tab__icon" aria-hidden="true">ℹ️</span>
+      <span class="tab__label">Info</span>
+    </button>
+  </nav>
+
+  <script src="data.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "appId": "pl.hiszpania.przewodnik",
+  "appName": "Przewodnik Hiszpania",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

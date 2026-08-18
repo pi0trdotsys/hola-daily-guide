@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Przewodnik Hiszpania</string>
+    <string name="title_activity_main">Przewodnik Hiszpania</string>
+    <string name="package_name">pl.hiszpania.przewodnik</string>
+    <string name="custom_url_scheme">pl.hiszpania.przewodnik</string>
+</resources>
