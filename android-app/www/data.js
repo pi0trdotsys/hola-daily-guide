@@ -1,7 +1,7 @@
 // Wygenerowano z trip.md za pomocą gen-data.mjs.
 // Markdown (trip.md) jest źródłową bazą danych tego przewodnika.
 window.__TRIP__ = {
-  "title": "🇪🇸 Przewodnik – Hiszpania, wrzesień 2025",
+  "title": "🇪🇸 Przewodnik – Hiszpania, wrzesień 2026",
   "general": {
     "Trasa": "Malaga → Tolox → Estepona",
     "Towarzysz": "Mama",
@@ -31,8 +31,8 @@ window.__TRIP__ = {
           "num": 1,
           "title": "Przyjazd",
           "dateLabel": "20 wrz.",
-          "weekday": "sob.",
-          "date": "2025-09-20",
+          "weekday": "niedz.",
+          "date": "2026-09-20",
           "theme": "Przyjazd i orientacja w mieście",
           "drive": null,
           "items": [
@@ -80,8 +80,8 @@ window.__TRIP__ = {
           "num": 2,
           "title": "Historia i widoki",
           "dateLabel": "21 wrz.",
-          "weekday": "niedz.",
-          "date": "2025-09-21",
+          "weekday": "pon.",
+          "date": "2026-09-21",
           "theme": "Twierdze, muzeum i plaża",
           "drive": null,
           "items": [],
@@ -158,7 +158,7 @@ window.__TRIP__ = {
           "title": "Przyjazd do Tolox",
           "dateLabel": "22 wrz.",
           "weekday": "wt.",
-          "date": "2025-09-22",
+          "date": "2026-09-22",
           "theme": "Przyjazd, zameldowanie, spacer po miasteczku",
           "drive": {
             "from": "Malaga",
@@ -218,7 +218,7 @@ window.__TRIP__ = {
           "title": "Uzdrowisko i przyroda",
           "dateLabel": "23 wrz.",
           "weekday": "śr.",
-          "date": "2025-09-23",
+          "date": "2026-09-23",
           "theme": "Balneario i spacer w górach",
           "drive": null,
           "items": [],
@@ -254,7 +254,7 @@ window.__TRIP__ = {
           "title": "Sierra de las Nieves",
           "dateLabel": "24 wrz.",
           "weekday": "czw.",
-          "date": "2025-09-24",
+          "date": "2026-09-24",
           "theme": "Trekking w Parku Narodowym (elastycznie)",
           "drive": null,
           "items": [],
@@ -298,7 +298,7 @@ window.__TRIP__ = {
           "title": "Wolny dzień w Tolox",
           "dateLabel": "25 wrz.",
           "weekday": "pt.",
-          "date": "2025-09-25",
+          "date": "2026-09-25",
           "theme": "Relaks, lokalne smaki, przygotowanie do wyjazdu",
           "drive": null,
           "items": [
@@ -349,7 +349,7 @@ window.__TRIP__ = {
           "title": "Przyjazd do Estepona",
           "dateLabel": "26 wrz.",
           "weekday": "sob.",
-          "date": "2025-09-26",
+          "date": "2026-09-26",
           "theme": "Przyjazd, zameldowanie, pierwsze wrażenia",
           "drive": {
             "from": "Tolox",
@@ -409,7 +409,7 @@ window.__TRIP__ = {
           "title": "Orchidarium i plaża",
           "dateLabel": "27 wrz.",
           "weekday": "niedz.",
-          "date": "2025-09-27",
+          "date": "2026-09-27",
           "theme": "Kultura, ogród, relaks przy morzu",
           "drive": null,
           "items": [],
@@ -460,7 +460,7 @@ window.__TRIP__ = {
           "title": "Wolny dzień / wyjazd",
           "dateLabel": "28–29 wrz.",
           "weekday": "",
-          "date": "2025-09-28",
+          "date": "2026-09-28",
           "theme": "Relaks lub opcjonalna wycieczka, powrót",
           "drive": null,
           "items": [

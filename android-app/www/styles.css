@@ -45,6 +45,46 @@ html, body {
   padding: 0;
 }
 
+/* fancy minimal: subtelna siatka + poświaty w tle */
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 40%, transparent 100%);
+}
+
+.glow {
+  position: fixed;
+  width: 52vmax;
+  height: 52vmax;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.22;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glow--cyan {
+  top: -18vmax;
+  right: -14vmax;
+  background: radial-gradient(circle, var(--signal), transparent 60%);
+}
+
+.glow--gold {
+  bottom: -20vmax;
+  left: -16vmax;
+  background: radial-gradient(circle, var(--spain-gold), transparent 60%);
+  opacity: 0.12;
+}
+
+.topbar, .tabbar, .app { position: relative; z-index: 10; }
+
 html {
   font-size: 17px;
 }
@@ -328,30 +368,35 @@ button {
 
 .hero__route .sep { color: var(--signal); font-weight: 800; }
 
-/* ---------- stat grid ---------- */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.65rem;
-  margin: 1rem 1rem 0;
+/* ---------- meta strip (zastępuje kafelki „stat") ---------- */
+.meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 1rem 1rem 0;
 }
 
-.stat {
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--muted);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 0.75rem 0.85rem;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
 }
 
-.stat__icon { font-size: var(--fs-lg); }
+.meta-pill--accent {
+  color: var(--spain-gold);
+  border-color: var(--spain-gold);
+  background: var(--spain-gold-soft);
+}
 
-.stat__value { font-weight: 800; font-size: var(--fs-md); margin-top: 0.2rem; }
-
-.stat__label {
-  font-size: var(--fs-xs);
-  color: var(--muted);
-  font-weight: 700;
-  letter-spacing: 0.04em;
+/* ---------- accented text ---------- */
+.accent {
+  color: var(--signal);
 }
 
 /* ---------- day list ---------- */
@@ -800,6 +845,102 @@ button {
   color: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+/* ---------- weather chip ---------- */
+.wx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+}
+
+.wx-chip__min {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.day-card__meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+
+/* ---------- live card (kurs / paliwo) ---------- */
+.live-card {
+  overflow: hidden;
+  margin: 0.5rem 0 1rem;
+  background:
+    linear-gradient(135deg, rgba(77, 212, 224, 0.06), transparent 45%),
+    var(--surface);
+}
+
+.live-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+}
+
+.live-row + .live-row { border-top: 1px solid var(--border); }
+
+.live-row__k { color: var(--muted); font-weight: 600; font-size: var(--fs-sm); }
+
+.live-row__v { font-weight: 800; font-size: var(--fs-md); color: var(--text); }
+
+.live-note {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-top: 1px dashed var(--border);
+}
+
+.live-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 0 rgba(110, 231, 160, 0.5);
+  animation: pulse-dot 2.2s ease-out infinite;
+}
+
+@keyframes pulse-dot {
+  0% { box-shadow: 0 0 0 0 rgba(110, 231, 160, 0.5); }
+  70% { box-shadow: 0 0 0 7px rgba(110, 231, 160, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(110, 231, 160, 0); }
+}
+
+.mono-note {
+  font-family: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
+/* znaczniki dla wszystkich chipów pogody (scanline minimal effect) */
+.wx-chip {
+  position: relative;
+  overflow: hidden;
+}
+
+.wx-chip::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* ---------- misc ---------- */

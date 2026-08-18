@@ -9,6 +9,9 @@ const PHRASES = window.__PHRASES__ || { groups: [], pronunciation: [], emergency
 const LS = {
   checks: "hiszpania.checks",
   zoom: "hiszpania.zoom",
+  fx: "hiszpania.fx",
+  fuel: "hiszpania.fuel",
+  weather: "hiszpania.weather",
 };
 
 let state = {
@@ -18,10 +21,8 @@ let state = {
 };
 
 // ---------- pinezki Google Maps (polecane miejsca) ----------
-// Klucz: "idMiasta|slug(nazwy)". Polożenie przybliżone (centroid miasta/miejsca).
 const _P = (lat, lng, label) => ({ lat, lng, label });
 const PLACES = {
-  // miasta
   "malaga": _P(36.7213, -4.4213, "Málaga"),
   "tolox": _P(36.6583, -4.9043, "Tolox"),
   "estepona": _P(36.4280, -5.1463, "Estepona"),
@@ -64,6 +65,83 @@ const PLACES = {
   "estepona|restaurante meson el rosario": _P(36.4280, -5.1455, "Mesón El Rosario, Estepona"),
 };
 
+// słowne dopasowania miejsc w opisach "planu dnia" → klucz pinezki
+const PIN_ALIASES = {
+  malaga: [
+    ["centrum historyczn", "malaga|centrum historyczne calle larios"],
+    ["calle larios", "malaga|centrum historyczne calle larios"],
+    ["mercado atarazanas", "malaga|mercado central de atarazanas"],
+    ["la malagueta", "malaga|plaza la malagueta"],
+    ["alcazaba", "malaga|alcazaba"],
+    ["gibralfaro", "malaga|zamek gibralfaro"],
+    ["picasso", "malaga|muzeum picassa"],
+    ["lotnisku", "malaga"],
+  ],
+  tolox: [
+    ["castle tower", "tolox|spacer po miasteczku"],
+    ["centrum miasteczka", "tolox|spacer po miasteczku"],
+    ["kawa na plaza", "tolox|spacer po miasteczku"],
+    ["ronda", "tolox|ronda"],
+    ["balneario", "tolox|balneario de tolox"],
+    ["sierra", "tolox|sierra de las nieves"],
+  ],
+  estepona: [
+    ["tadawn", "estepona"],
+    ["starym mieście", "estepona|stare miasto kwiaty"],
+    ["calle real", "estepona|stare miasto kwiaty"],
+    ["paseo marítimo", "estepona"],
+    ["promenadą", "estepona"],
+    ["marbelli", "estepona|marbella"],
+    ["orchidarium", "estepona|orchidarium"],
+    ["playa de la rada", "estepona|plaza playa de la rada"],
+  ],
+};
+
+// współrzędne miast do pogody
+const CITIES_COORDS = {
+  malaga: { lat: 36.7213, lng: -4.4213 },
+  tolox: { lat: 36.6583, lng: -4.9043 },
+  estepona: { lat: 36.4280, lng: -5.1463 },
+};
+
+// WMO weather code → [ikona, opis]
+const WMO = {
+  0: ["☀️", "Słonecznie"],
+  1: ["🌤️", "Przeważnie słonecznie"],
+  2: ["⛅", "Częściowo pochmurno"],
+  3: ["☁️", "Pochmurno"],
+  45: ["🌫️", "Mgła"],
+  48: ["🌫️", "Mgła"],
+  51: ["🌦️", "Mżawka"],
+  53: ["🌦️", "Mżawka"],
+  55: ["🌦️", "Mżawka"],
+  56: ["🌦️", "Mżawka"],
+  57: ["🌦️", "Mżawka"],
+  61: ["🌧️", "Lekki deszcz"],
+  63: ["🌧️", "Deszcz"],
+  65: ["🌧️", "Mocny deszcz"],
+  66: ["🌧️", "Deszcz ze śniegiem"],
+  67: ["🌧️", "Deszcz ze śniegiem"],
+  71: ["🌨️", "Śnieg"],
+  73: ["🌨️", "Śnieg"],
+  75: ["🌨️", "Śnieg"],
+  77: ["🌨️", "Śnieg"],
+  80: ["🌧️", "Przelotny deszcz"],
+  81: ["🌧️", "Przelotny deszcz"],
+  82: ["🌧️", "Ulewa"],
+  85: ["🌨️", "Przelotny śnieg"],
+  86: ["🌨️", "Przelotny śnieg"],
+  95: ["⛈️", "Burza"],
+  96: ["⛈️", "Burza z gradem"],
+  99: ["⛈️", "Burza z gradem"],
+};
+
+// ---------- live data (FX / paliwo / pogoda) ----------
+let WX_BY_DATE = {};
+let FX = null;
+let FUEL = null;
+let activeDay = todayStr();
+
 // ---------- pomocnicze ----------
 function clamp(n, min, max) {
   return Math.min(max, Math.max(min, n));
@@ -96,14 +174,27 @@ function placeByKey(cityId, name) {
   return PLACES[cityId + "|" + slug(name)];
 }
 
-function pinAnchor(cityId, name, extraClass) {
-  const p = placeByKey(cityId, name);
+function pinAnchorByKey(placeKey, extraClass) {
+  const p = PLACES[placeKey];
   if (!p) return "";
   const href = mapsUrl(p.label, p.lat, p.lng);
   return (
     '<a class="pin-btn ' + (extraClass || "") + '" href="' + escapeHtml(href) + '" target="_blank" rel="noopener" ' +
     'aria-label="Zobacz na mapie: ' + escapeHtml(p.label) + '" title="Zobacz na mapie">📍</a>'
   );
+}
+
+function pinAnchor(cityId, name, extraClass) {
+  return pinAnchorByKey(cityId + "|" + slug(name), extraClass);
+}
+
+function itemPin(cityId, label) {
+  const l = slug(label);
+  const aliases = PIN_ALIASES[cityId] || [];
+  for (let i = 0; i < aliases.length; i++) {
+    if (l.includes(aliases[i][0])) return pinAnchorByKey(aliases[i][1], "pin-btn--inline");
+  }
+  return "";
 }
 
 function readZoom() {
@@ -134,7 +225,7 @@ function toggleCheck(key) {
   if (map[key]) delete map[key];
   else map[key] = true;
   saveChecks(map);
-  render();
+  render(true); // zachowaj pozycję przewijania
 }
 
 // ---------- zoom (A+/A-) ----------
@@ -154,6 +245,148 @@ function zoomBy(delta) {
   state.zoom = clamp(state.zoom + delta, 0, 8);
   applyZoom();
   updateZoomButtons();
+}
+
+// ---------- daty / cache ----------
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+function timeStr() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+
+function loadJSON(key) {
+  try {
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveJSON(key, v) {
+  try {
+    localStorage.setItem(key, JSON.stringify(v));
+  } catch {
+    /* ignore */
+  }
+}
+
+// ---------- kurs EUR/PLN (odświeżany o północy) ----------
+async function refreshFX() {
+  try {
+    const r = await fetch("https://api.frankfurter.dev/v1/latest?base=EUR&symbols=PLN");
+    const j = await r.json();
+    if (j && j.rates && j.rates.PLN) {
+      FX = { rate: j.rates.PLN, date: todayStr(), at: timeStr() };
+      saveJSON(LS.fx, FX);
+      return true;
+    }
+  } catch {
+    /* offline */
+  }
+  return false;
+}
+
+function loadFX() {
+  const c = loadJSON(LS.fx);
+  if (c && c.date === todayStr() && c.rate) {
+    FX = c;
+    return false;
+  }
+  return true;
+}
+
+// ---------- średnia cena paliwa w Hiszpanii ----------
+async function refreshFuel() {
+  try {
+    const r = await fetch("https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroProvincia/29");
+    const j = await r.json();
+    const list = (j && j.ListaEESSPrecio) || [];
+    let sum = 0;
+    let n = 0;
+    for (let i = 0; i < list.length; i++) {
+      const raw = String(list[i]["Precio Gasolina 95 E5"] || "").replace(",", ".");
+      const p = parseFloat(raw);
+      if (Number.isFinite(p) && p > 0) {
+        sum += p;
+        n++;
+      }
+    }
+    if (n > 0) {
+      FUEL = { avg: +(sum / n).toFixed(3), date: todayStr(), at: timeStr() };
+      saveJSON(LS.fuel, FUEL);
+      return true;
+    }
+  } catch {
+    /* offline */
+  }
+  return false;
+}
+
+function loadFuel() {
+  const c = loadJSON(LS.fuel);
+  if (c && c.date === todayStr() && c.avg) {
+    FUEL = c;
+    return false;
+  }
+  return true;
+}
+
+// ---------- pogoda (Open-Meteo, raz dziennie) ----------
+async function refreshWeather() {
+  const byDate = {};
+  await Promise.all(
+    TRIP.cities.map(async (c) => {
+      const co = CITIES_COORDS[c.id];
+      if (!co) return;
+      try {
+        const url =
+          "https://api.open-meteo.com/v1/forecast?latitude=" + co.lat + "&longitude=" + co.lng +
+          "&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FMadrid&forecast_days=16";
+        const r = await fetch(url);
+        const j = await r.json();
+        if (j && j.daily && j.daily.time) {
+          j.daily.time.forEach((t, i) => {
+            const w = WMO[j.daily.weather_code[i]] || ["🌡️", "Zmienna"];
+            byDate[t] = {
+              icon: w[0],
+              label: w[1],
+              tmax: Math.round(j.daily.temperature_2m_max[i]),
+              tmin: Math.round(j.daily.temperature_2m_min[i]),
+            };
+          });
+        }
+      } catch {
+        /* offline */
+      }
+    })
+  );
+  WX_BY_DATE = byDate;
+  saveJSON(LS.weather, { date: todayStr(), byDate });
+}
+
+function loadWeather() {
+  const c = loadJSON(LS.weather);
+  if (c && c.date === todayStr() && c.byDate) {
+    WX_BY_DATE = c.byDate;
+    return false;
+  }
+  return true;
+}
+
+function weatherChip(dateStr) {
+  const w = dateStr ? WX_BY_DATE[dateStr] : null;
+  if (!w) return "";
+  return (
+    '<span class="wx-chip" title="' + escapeHtml(w.label) + '">' +
+    w.icon +
+    '<span>' + w.tmax + '°</span><span class="wx-chip__min">' + w.tmin + '°</span>' +
+    "</span>"
+  );
 }
 
 // ---------- helpers renderujące ----------
@@ -184,46 +417,34 @@ function chip(text, cls) {
   return `<span class="chip ${cls || ""}">${escapeHtml(text)}</span>`;
 }
 
+function metaStrip(pills) {
+  return (
+    `<div class="meta-strip">` +
+    pills.map((p, i) => `<span class="meta-pill${i === 0 ? " meta-pill--accent" : ""}">${escapeHtml(p)}</span>`).join("") +
+    `</div>`
+  );
+}
+
 // ---------- ekrany ----------
 function renderHome() {
   const general = TRIP.general || {};
-  const route = general["Trasa"] || "";
-  const routeParts = route.split("→").map((s) => s.trim()).filter(Boolean);
-
   const days = [];
-  TRIP.cities.forEach((c) => {
-    c.days.forEach((d) => {
-      days.push({ city: c, day: d });
-    });
-  });
+  TRIP.cities.forEach((c) => c.days.forEach((d) => days.push({ city: c, day: d })));
   days.sort((a, b) => a.day.num - b.day.num);
+
+  const pills = [];
+  pills.push("2 osoby");
+  pills.push(days.length + " dni");
+  pills.push(TRIP.cities.length + " miasta");
+  if (general["Transport"]) pills.push(general["Transport"]);
+  if (general["Budżet"]) pills.push(general["Budżet"]);
 
   const hero =
     `<section class="hero">` +
-    `<span class="hero__badge">🇪🇸 Hiszpania · wrzesień 2025</span>` +
-    `<h1>Przewodnik po Andaluzji</h1>` +
-    `<p class="hero__sub">Malaga → Tolox → Estepona · 9 dni z mamą</p>` +
-    `<div class="hero__route">` +
-    routeParts.map((p, idx) => `${idx ? `<span class="sep">→</span>` : ""}<span>${escapeHtml(p)}</span>`).join("") +
-    `</div>` +
+    `<span class="hero__badge">🇪🇸 Hiszpania · wrzesień 2026</span>` +
+    `<h1>Przewodnik po <span class="accent">Andaluzji</span></h1>` +
+    `<p class="hero__sub">Malaga → Tolox → Estepona · 9 dni dla 2 osób</p>` +
     `</section>`;
-
-  const generalStats = [];
-  if (general["Towarzysz"]) generalStats.push(["👤", general["Towarzysz"]]);
-  if (general["Transport"]) generalStats.push(["🚗", general["Transport"]]);
-  if (general["Budżet"]) generalStats.push(["💶", general["Budżet"]]);
-  if (general["Styl"]) generalStats.push(["🧭", general["Styl"]]);
-
-  const stats =
-    `<div class="stats">` +
-    generalStats
-      .map(
-        ([icon, val]) =>
-          `<div class="stat">${iconFor(icon)}<div class="stat__value">${escapeHtml(val)}</div><div class="stat__label"></div></div>`
-      )
-      .join("") +
-    `<div class="stat">${iconFor("📅")}<div class="stat__value">${days.length} dni</div><div class="stat__label">Trasa</div></div>` +
-    `</div>`;
 
   const cityList =
     `<section class="section">` +
@@ -242,7 +463,7 @@ function renderHome() {
 
   const dayList =
     `<section class="section">` +
-    sectionHead("Dzień po dniu", "Plan podróży", "Wybierz dzień, aby zobaczyć szczegóły.") +
+    sectionHead("Dzień po dniu", "Plan podróży", "Wybierz dzień, aby zobaczyć szczegóły i pogodę.") +
     `<div class="day-list">` +
     days
       .map(
@@ -252,7 +473,7 @@ function renderHome() {
           `<span class="day-card__body">` +
           `<span class="day-card__title">${escapeHtml(day.title)}</span>` +
           `<span class="day-card__sub">${escapeHtml(day.dateLabel)}${day.weekday ? " · " + escapeHtml(day.weekday) : ""}</span>` +
-          `<span class="day-card__city">${chip(city.name, "chip--signal")}</span>` +
+          `<span class="day-card__meta-row">${chip(city.name, "chip--signal")}${weatherChip(day.date)}</span>` +
           `</span>` +
           `<span class="btn__arrow">›</span>` +
           `</button>`
@@ -260,18 +481,16 @@ function renderHome() {
       .join("") +
     `</div></section>`;
 
-  return `<div>${hero}${stats}${cityList}${dayList}<div class="safe-bottom"></div></div>`;
+  return `<div>${hero}${metaStrip(pills)}${cityList}${dayList}<div class="safe-bottom"></div></div>`;
 }
 
 function renderDays() {
   const days = [];
-  TRIP.cities.forEach((c) => {
-    c.days.forEach((d) => days.push({ city: c, day: d }));
-  });
+  TRIP.cities.forEach((c) => c.days.forEach((d) => days.push({ city: c, day: d })));
   days.sort((a, b) => a.day.num - b.day.num);
 
   let html = `<div>`;
-  html += sectionHead("Plan podróży", "Wszystkie dni", "Dziewięć dni w Andaluzji.");
+  html += sectionHead("Plan podróży", "Wszystkie dni", "Dziewięć dni w Andaluzji — z prognozą pogody.");
   html += `<div class="day-list">`;
 
   let lastCity = "";
@@ -286,6 +505,7 @@ function renderDays() {
       `<span class="day-card__body">` +
       `<span class="day-card__title">${escapeHtml(day.title)}</span>` +
       `<span class="day-card__sub">${escapeHtml(day.theme || day.dateLabel)}</span>` +
+      `<span class="day-card__meta-row">${weatherChip(day.date)}</span>` +
       `</span>` +
       `<span class="btn__arrow">›</span>` +
       `</button>`;
@@ -295,7 +515,7 @@ function renderDays() {
   return html;
 }
 
-function progressCard(labelKey, title, items) {
+function progressCard(title, items) {
   const checks = getChecks();
   const done = items.filter((it) => isDone(checks, it.key)).length;
   const total = items.length;
@@ -322,11 +542,7 @@ function checklistItem(key, label, meta, done) {
 function renderChecklists() {
   const checks = getChecks();
 
-  const attractionItems = TRIP.summaryAttractions.map((a) => ({
-    key: a.key,
-    label: a.name,
-    meta: a.city,
-  }));
+  const attractionItems = TRIP.summaryAttractions.map((a) => ({ key: a.key, label: a.name, meta: a.city }));
   const restaurantItems = [];
   const seenRes = new Set();
   TRIP.summaryRestaurants.forEach((r) => {
@@ -334,7 +550,6 @@ function renderChecklists() {
     seenRes.add(r.key);
     restaurantItems.push({ key: r.key, label: r.name, meta: r.city });
   });
-
   const packItems = TRIP.packFlat.map((p) => ({ key: p.key, label: p.label, meta: "" }));
 
   const allCheck = [...attractionItems, ...restaurantItems, ...packItems];
@@ -342,37 +557,24 @@ function renderChecklists() {
 
   let html = `<div>`;
   html += sectionHead("Listy do odhaczania", "Checklisty", "Zaznacz co zrobiłaś — zapisuje się automatycznie.");
+  html += progressCard("Cały wyjazd", allCheck);
 
-  html += progressCard("all", "Cały wyjazd", allCheck);
-
-  // Atrakcje
   html += `<div class="check-group panel">`;
   html += `<div class="check-group__title">🏛️ Atrakcje (${attractionItems.filter((i) => isDone(checks, i.key)).length}/${attractionItems.length})</div>`;
   attractionItems.forEach((it) => {
-    // pinezka po prawej, jeśli miejsce jest w bazie
     const pin = pinAnchor(slug(it.meta), it.label, "pin-btn--inline");
-    html +=
-      '<div class="check-row">' +
-      checklistItem(it.key, it.label, it.meta, isDone(checks, it.key)) +
-      pin +
-      "</div>";
+    html += '<div class="check-row">' + checklistItem(it.key, it.label, it.meta, isDone(checks, it.key)) + pin + "</div>";
   });
   html += `</div>`;
 
-  // Restauracje
   html += `<div class="check-group panel">`;
   html += `<div class="check-group__title">🍽️ Restauracje (${restaurantItems.filter((i) => isDone(checks, i.key)).length}/${restaurantItems.length})</div>`;
   restaurantItems.forEach((it) => {
     const pin = pinAnchor(slug(it.meta), it.label, "pin-btn--inline");
-    html +=
-      '<div class="check-row">' +
-      checklistItem(it.key, it.label, it.meta, isDone(checks, it.key)) +
-      pin +
-      "</div>";
+    html += '<div class="check-row">' + checklistItem(it.key, it.label, it.meta, isDone(checks, it.key)) + pin + "</div>";
   });
   html += `</div>`;
 
-  // Rzeczy do zabrania
   html += `<div class="check-group panel">`;
   html += `<div class="check-group__title">🧳 Rzeczy do zabrania (${packItems.filter((i) => isDone(checks, i.key)).length}/${packItems.length})</div>`;
   packItems.forEach((it) => {
@@ -390,10 +592,8 @@ function renderChecklists() {
 function renderPhrases() {
   let html = `<div>`;
   html += sectionHead("Rozmówki", "Hiszpański w pigułce", "Przydatne zwroty z wymową oraz numery alarmowe.");
-
   html += `<div class="content">`;
 
-  // Numery alarmowe
   html += subhead("📞 Numery obowiązujące w Hiszpanii", "dotknij, aby zadzwonić");
   html += `<div class="emergency-list panel">`;
   PHRASES.emergency.forEach((e) => {
@@ -408,7 +608,6 @@ function renderPhrases() {
   });
   html += `</div>`;
 
-  // Grupy słownictwa
   PHRASES.groups.forEach((g) => {
     html += subhead(g.title, "· " + (g.hint || ""));
     html += `<div class="phrase-list panel">`;
@@ -423,7 +622,6 @@ function renderPhrases() {
     html += `</div>`;
   });
 
-  // Zasady wymowy
   html += subhead("🔤 Wymowa w skrócie", "");
   html += `<div class="info-table panel">`;
   (PHRASES.pronunciation || []).forEach((r) => {
@@ -433,6 +631,24 @@ function renderPhrases() {
 
   html += `</div><div class="safe-bottom"></div></div>`;
   return html;
+}
+
+function renderLiveCard() {
+  let rows = "";
+  rows +=
+    `<div class="live-row">` +
+    `<span class="live-row__k">Kurs EUR/PLN</span>` +
+    `<span class="live-row__v">1 € = ${FX ? FX.rate.toFixed(3) : "…"} zł</span>` +
+    `</div>`;
+  rows +=
+    `<div class="live-row">` +
+    `<span class="live-row__k">Benzyna 95 (Andaluzja)</span>` +
+    `<span class="live-row__v">${FUEL ? FUEL.avg.toFixed(3) + " €/l" : "…"}</span>` +
+    `</div>`;
+  const note =
+    `<div class="live-note"><span class="live-dot" aria-hidden="true"></span>` +
+    `<span class="mono-note">kurs/fuel aktualizowane codziennie · pogoda raz dziennie</span></div>`;
+  return `<div class="live-card panel">${rows}${note}</div>`;
 }
 
 function renderInfo() {
@@ -471,9 +687,11 @@ function renderInfo() {
 
   return (
     `<div>` +
-    sectionHead("Informacje", "W pigułce", "Dane wyjazdu, trasy i wskazówki.") +
+    sectionHead("Informacje", "W pigułce", "Dane wyjazdu, trasy, kurs i wskazówki.") +
     `<div class="content">` +
     `<div class="info-table panel">${generalRows}</div>` +
+    `<div class="section__head" style="padding-left:0"><h2 class="section__title" style="font-size:var(--fs-xl)">Na żywo</h2></div>` +
+    renderLiveCard() +
     `<div class="section__head" style="padding-left:0"><h2 class="section__title" style="font-size:var(--fs-xl)">Trasy samochodowe</h2></div>` +
     routeCards +
     `<div class="section__head" style="padding-left:0"><h2 class="section__title" style="font-size:var(--fs-xl)">Rzeczy do zabrania</h2></div>` +
@@ -492,6 +710,7 @@ function renderCity(city) {
         `<span class="day-card__body">` +
         `<span class="day-card__title">${escapeHtml(d.title)}</span>` +
         `<span class="day-card__sub">${escapeHtml(d.theme || d.dateLabel)}</span>` +
+        `<span class="day-card__meta-row">${weatherChip(d.date)}</span>` +
         `</span>` +
         `<span class="btn__arrow">›</span>` +
         `</button>`
@@ -555,7 +774,7 @@ function renderDay(city, day) {
   const checks = getChecks();
 
   const itemList = day.items
-    .map((it) => checklistItem(it.key, it.label, "", isDone(checks, it.key)))
+    .map((it) => '<div class="check-row">' + checklistItem(it.key, it.label, "", isDone(checks, it.key)) + itemPin(city.id, it.label) + "</div>")
     .join("");
 
   const attractionCards = day.attractions
@@ -590,6 +809,7 @@ function renderDay(city, day) {
     chip(city.name, "chip--signal") +
     chip(day.dateLabel, "") +
     (day.weekday ? chip(day.weekday, "") : "") +
+    (weatherChip(day.date) ? weatherChip(day.date) : "") +
     `</div>` +
     (day.theme ? `<div class="detail__body" style="padding-bottom:0"><div class="tip"><div class="tip__title">Temat dnia</div><p>${escapeHtml(day.theme)}</p></div></div>` : "") +
     `<div class="detail__body">` +
@@ -603,7 +823,8 @@ function renderDay(city, day) {
 }
 
 // ---------- render główny ----------
-function render() {
+function render(keepScroll) {
+  const prevScroll = window.scrollY;
   let html = "";
   if (state.view) {
     if (state.view.kind === "city") {
@@ -628,7 +849,8 @@ function render() {
   }
 
   $app.innerHTML = html;
-  window.scrollTo(0, 0);
+  if (keepScroll) window.scrollTo(0, prevScroll);
+  else window.scrollTo(0, 0);
   updateTabbar();
   updateZoomButtons();
 }
@@ -655,15 +877,6 @@ function handleClick(e) {
   const el = e.target.closest("[data-action]");
   if (!el) return;
   const action = el.dataset.action;
-
-  if (action === "zoom-in") {
-    zoomBy(1);
-    return;
-  }
-  if (action === "zoom-out") {
-    zoomBy(-1);
-    return;
-  }
 
   if (action === "tab") {
     state.view = null;
@@ -720,11 +933,33 @@ $tabbar.addEventListener("click", (e) => {
 
 $app.addEventListener("click", handleClick);
 
+function loadLive() {
+  const needFx = loadFX();
+  const needFuel = loadFuel();
+  const needWx = loadWeather();
+  return Promise.all([
+    needFx ? refreshFX() : Promise.resolve(true),
+    needFuel ? refreshFuel() : Promise.resolve(true),
+    needWx ? refreshWeather() : Promise.resolve(true),
+  ]).then(() => render(true));
+}
+
 function init() {
   applyZoom();
   render();
   const splash = document.getElementById("splash");
   if (splash) splash.remove();
+
+  loadLive();
+
+  // odświeżanie o północy (sprawdzane co minutę)
+  setInterval(() => {
+    const today = todayStr();
+    if (today !== activeDay) {
+      activeDay = today;
+      loadLive();
+    }
+  }, 60 * 1000);
 }
 
 init();

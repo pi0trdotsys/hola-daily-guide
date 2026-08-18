@@ -1,5 +1,5 @@
 ---
-title: "Przewodnik – Hiszpania wrzesień 2025"
+title: "Przewodnik – Hiszpania wrzesień 2026"
 trip:
   companions: ["mama"]
   style: "umiarkowany"
@@ -29,7 +29,7 @@ cities:
     days: [7, 8, 9]
 ---
 
-# 🇪🇸 Przewodnik – Hiszpania, wrzesień 2025
+# 🇪🇸 Przewodnik – Hiszpania, wrzesień 2026
 
 ## Informacje ogólne
 
@@ -54,11 +54,11 @@ accommodation: ~
 coordinates: [36.7213, -4.4213]
 ```
 
-### Dzień 1 – Przyjazd (20 wrz., sob.)
+### Dzień 1 – Przyjazd (20 wrz., niedz.)
 
 ```yaml
 day: 1
-date: "2025-09-20"
+date: "2026-09-20"
 theme: Przyjazd i orientacja w mieście
 ```
 
@@ -75,11 +75,11 @@ theme: Przyjazd i orientacja w mieście
 
 ---
 
-### Dzień 2 – Historia i widoki (21 wrz., niedz.)
+### Dzień 2 – Historia i widoki (21 wrz., pon.)
 
 ```yaml
 day: 2
-date: "2025-09-21"
+date: "2026-09-21"
 theme: Twierdze, muzeum i plaża
 ```
 
@@ -132,7 +132,7 @@ coordinates: [36.6583, -4.9043]
 
 ```yaml
 day: 3
-date: "2025-09-22"
+date: "2026-09-22"
 theme: Przyjazd, zameldowanie, spacer po miasteczku
 drive:
   from: Malaga
@@ -159,7 +159,7 @@ drive:
 
 ```yaml
 day: 4
-date: "2025-09-23"
+date: "2026-09-23"
 theme: Balneario i spacer w górach
 ```
 
@@ -183,7 +183,7 @@ theme: Balneario i spacer w górach
 
 ```yaml
 day: 5
-date: "2025-09-24"
+date: "2026-09-24"
 theme: Trekking w Parku Narodowym (elastycznie)
 ```
 
@@ -215,7 +215,7 @@ tips:
 
 ```yaml
 day: 6
-date: "2025-09-25"
+date: "2026-09-25"
 theme: Relaks, lokalne smaki, przygotowanie do wyjazdu
 ```
 
@@ -246,7 +246,7 @@ coordinates: [36.4280, -5.1463]
 
 ```yaml
 day: 7
-date: "2025-09-26"
+date: "2026-09-26"
 theme: Przyjazd, zameldowanie, pierwsze wrażenia
 drive:
   from: Tolox
@@ -275,7 +275,7 @@ drive:
 
 ```yaml
 day: 8
-date: "2025-09-27"
+date: "2026-09-27"
 theme: Kultura, ogród, relaks przy morzu
 ```
 
@@ -304,7 +304,7 @@ theme: Kultura, ogród, relaks przy morzu
 
 ```yaml
 day: 9
-date: "2025-09-28"
+date: "2026-09-28"
 theme: Relaks lub opcjonalna wycieczka, powrót
 ```
 
