@@ -10,33 +10,74 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HiszpaniaRouteImport } from './routes/hiszpania'
+import { Route as MiejscaRouteImport } from './routes/miejsca'
+import { Route as RozmowkiRouteImport } from './routes/rozmowki'
+import { Route as DzienDateRouteImport } from './routes/dzien.$date'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HiszpaniaRoute = HiszpaniaRouteImport.update({
+  id: '/hiszpania',
+  path: '/hiszpania',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MiejscaRoute = MiejscaRouteImport.update({
+  id: '/miejsca',
+  path: '/miejsca',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RozmowkiRoute = RozmowkiRouteImport.update({
+  id: '/rozmowki',
+  path: '/rozmowki',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DzienDateRoute = DzienDateRouteImport.update({
+  id: '/dzien/$date',
+  path: '/dzien/$date',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/hiszpania': typeof HiszpaniaRoute
+  '/miejsca': typeof MiejscaRoute
+  '/rozmowki': typeof RozmowkiRoute
+  '/dzien/$date': typeof DzienDateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/hiszpania': typeof HiszpaniaRoute
+  '/miejsca': typeof MiejscaRoute
+  '/rozmowki': typeof RozmowkiRoute
+  '/dzien/$date': typeof DzienDateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/hiszpania': typeof HiszpaniaRoute
+  '/miejsca': typeof MiejscaRoute
+  '/rozmowki': typeof RozmowkiRoute
+  '/dzien/$date': typeof DzienDateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/hiszpania' | '/miejsca' | '/rozmowki' | '/dzien/$date'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/hiszpania' | '/miejsca' | '/rozmowki' | '/dzien/$date'
+  id:
+    '__root__' | '/' | '/hiszpania' | '/miejsca' | '/rozmowki' | '/dzien/$date'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HiszpaniaRoute: typeof HiszpaniaRoute
+  MiejscaRoute: typeof MiejscaRoute
+  RozmowkiRoute: typeof RozmowkiRoute
+  DzienDateRoute: typeof DzienDateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +89,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hiszpania': {
+      id: '/hiszpania'
+      path: '/hiszpania'
+      fullPath: '/hiszpania'
+      preLoaderRoute: typeof HiszpaniaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/miejsca': {
+      id: '/miejsca'
+      path: '/miejsca'
+      fullPath: '/miejsca'
+      preLoaderRoute: typeof MiejscaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rozmowki': {
+      id: '/rozmowki'
+      path: '/rozmowki'
+      fullPath: '/rozmowki'
+      preLoaderRoute: typeof RozmowkiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dzien/$date': {
+      id: '/dzien/$date'
+      path: '/dzien/$date'
+      fullPath: '/dzien/$date'
+      preLoaderRoute: typeof DzienDateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HiszpaniaRoute: HiszpaniaRoute,
+  MiejscaRoute: MiejscaRoute,
+  RozmowkiRoute: RozmowkiRoute,
+  DzienDateRoute: DzienDateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
