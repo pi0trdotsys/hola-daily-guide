@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#0e141b" />
   <title>Przewodnik — Hiszpania</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" href="icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -45,12 +47,17 @@
       <span class="tab__icon" aria-hidden="true">✅</span>
       <span class="tab__label">Listy</span>
     </button>
+    <button class="tab" data-tab="phrases">
+      <span class="tab__icon" aria-hidden="true">💬</span>
+      <span class="tab__label">Rozmówki</span>
+    </button>
     <button class="tab" data-tab="info">
       <span class="tab__icon" aria-hidden="true">ℹ️</span>
       <span class="tab__label">Info</span>
     </button>
   </nav>
 
+  <script src="phrases.js"></script>
   <script src="data.js"></script>
   <script type="module" src="app.js"></script>
 </body>

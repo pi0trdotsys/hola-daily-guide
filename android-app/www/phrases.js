@@ -1,0 +1,86 @@
+// Słownictwo (rozmówki) + numery alarmowe w Hiszpanii.
+window.__PHRASES__ = {
+  groups: [
+    {
+      id: "podstawy",
+      title: "Podstawy",
+      hint: "Minimum, które otwiera każde drzwi",
+      items: [
+        { pl: "Dzień dobry", es: "Buenos días", say: "buenos dijas" },
+        { pl: "Dobry wieczór", es: "Buenas noches", say: "buenas noczes" },
+        { pl: "Proszę", es: "Por favor", say: "por fawor" },
+        { pl: "Dziękuję", es: "Gracias", say: "grasjas" },
+        { pl: "Przepraszam", es: "Perdón", say: "perdon" },
+        { pl: "Nie mówię po hiszpańsku", es: "No hablo español", say: "no ablo espaniol" },
+        { pl: "Czy mówi pan po angielsku?", es: "¿Habla inglés?", say: "abla ingles" },
+      ],
+    },
+    {
+      id: "restauracja",
+      title: "Restauracja i bar",
+      hint: "Kolacja zaczyna się po 21:00",
+      items: [
+        { pl: "Stolik dla dwóch osób", es: "Una mesa para dos", say: "una mesa para dos" },
+        { pl: "Poproszę kartę", es: "La carta, por favor", say: "la karta por fawor" },
+        { pl: "Co pan poleca?", es: "¿Qué me recomienda?", say: "ke me rekomjenda" },
+        { pl: "Poproszę rachunek", es: "La cuenta, por favor", say: "la kuenta por fawor" },
+        { pl: "Bez mięsa / wegetariańskie", es: "Sin carne / vegetariano", say: "sin karne / wechetarjano" },
+        { pl: "Woda niegazowana", es: "Agua sin gas", say: "agua sin gas" },
+        { pl: "Piwo małe", es: "Una caña", say: "una kania" },
+      ],
+    },
+    {
+      id: "droga",
+      title: "W drodze",
+      hint: "Auto, parking, kierunki",
+      items: [
+        { pl: "Gdzie jest parking?", es: "¿Dónde está el parking?", say: "donde esta el parking" },
+        { pl: "Do pełna, proszę", es: "Lleno, por favor", say: "jeno por fawor" },
+        { pl: "Jak dojechać do...?", es: "¿Cómo se llega a...?", say: "komo se jega a" },
+        { pl: "Czy to daleko?", es: "¿Está lejos?", say: "esta lechos" },
+        { pl: "Bilet do...", es: "Un billete para...", say: "un bijete para" },
+      ],
+    },
+    {
+      id: "nocleg",
+      title: "Nocleg",
+      hint: "Check-in bez stresu",
+      items: [
+        { pl: "Mam rezerwację", es: "Tengo una reserva", say: "tengo una reserwa" },
+        { pl: "O której jest wymeldowanie?", es: "¿A qué hora es la salida?", say: "a ke ora es la salida" },
+        { pl: "Klimatyzacja nie działa", es: "El aire acondicionado no funciona", say: "el ajre akondisjonado no funsjona" },
+        { pl: "Czy mogę zostawić bagaż?", es: "¿Puedo dejar la maleta?", say: "puedo dechar la maleta" },
+      ],
+    },
+    {
+      id: "zakupy",
+      title: "Zakupy i pytania",
+      hint: "Ile kosztuje? Gdzie jest?",
+      items: [
+        { pl: "Ile to kosztuje?", es: "¿Cuánto cuesta?", say: "kuanto kuesta" },
+        { pl: "Gdzie jest...?", es: "¿Dónde está...?", say: "donde esta" },
+        { pl: "Poproszę to", es: "Esto, por favor", say: "esto por fawor" },
+        { pl: "Nie rozumiem", es: "No entiendo", say: "no entjendo" },
+        { pl: "Mów wolniej, proszę", es: "Más despacio, por favor", say: "mas despasjo por fawor" },
+      ],
+    },
+  ],
+  pronunciation: [
+    { rule: "ll → j", example: "llave = 'jawe'" },
+    { rule: "ñ → ń/ni", example: "España = 'espania'" },
+    { rule: "j / g przed e,i → ch", example: "jamón = 'chamon'" },
+    { rule: "z / c przed e,i → s (Andaluzja)", example: "cerveza = 'serwesa'" },
+    { rule: "h nieme", example: "hola = 'ola'" },
+    { rule: "v ≈ b", example: "vino = 'bino'" },
+  ],
+  emergency: [
+    { title: "Numer alarmowy (wszystkie służby)", value: "112", desc: "działa w całej UE, także z telefonu bez karty SIM", tel: "112" },
+    { title: "Policja krajowa (Policía Nacional)", value: "091", desc: "sprawy w miastach, zgłoszenia", tel: "091" },
+    { title: "Policja lokalna / straż miejska", value: "092", desc: "sprawy lokalne, ruch drogowy w mieście", tel: "092" },
+    { title: "Pogotowie (Emergencias sanitarias)", value: "061", desc: "karetka, pomoc medyczna", tel: "061" },
+    { title: "Straż pożarna (Bomberos)", value: "080", desc: "pożary, wypadki, ratownictwo", tel: "080" },
+    { title: "Guardia Civil", value: "062", desc: "tereny zamiejskie, drogi, góry, wypadki i awarie", tel: "062" },
+    { title: "Pomoc dla turystów (SATE)", value: "+34 913 09 24 62", desc: "Serwis dla turystów zagranicznych (Madryt)", tel: "+34913092462" },
+    { title: "Ambasada RP w Madrycie", value: "+34 913 73 66 05", desc: "pomoc konsularna dla Polaków", tel: "+34913736605" },
+  ],
+};

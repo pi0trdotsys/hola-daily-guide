@@ -14,6 +14,12 @@
   --warn: #ffd479;
   --danger: #ff8a90;
 
+  /* akcenty Hiszpanii (flaga: czerwień + złoto) */
+  --spain-red: #c60b1e;
+  --spain-gold: #ffc400;
+  --spain-red-soft: rgba(198, 11, 30, 0.14);
+  --spain-gold-soft: rgba(255, 196, 0, 0.14);
+
   /* relative scale — base drives everything for zoom */
   --fs-base: 1rem;
   --fs-xs: calc(var(--fs-base) * 0.8);
@@ -28,7 +34,8 @@
   --radius-lg: 0.75rem;
   --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   --topbar-h: 3.4rem;
-  --tabbar-h: 3.6rem;
+  --tabbar-h: 3.9rem;
+  --pad-y: 1.6rem;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -64,8 +71,8 @@ button {
 
 .app {
   min-height: 100dvh;
-  padding-top: var(--topbar-h);
-  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  padding-top: calc(var(--topbar-h) + var(--pad-y));
+  padding-bottom: calc(var(--tabbar-h) + var(--pad-y) + env(safe-area-inset-bottom, 0px));
 }
 
 /* ---------- top bar ---------- */
@@ -628,6 +635,172 @@ button {
 
 .pack-item.is-done .pack-item__box { background: var(--signal); border-color: var(--signal); }
 .pack-item.is-done .pack-item__label { text-decoration: line-through; color: var(--muted); }
+
+/* ---------- spain flag accent ---------- */
+.hero {
+  position: relative;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--spain-red) 0 33%, var(--spain-gold) 33% 66%, var(--spain-red) 66% 100%);
+}
+
+/* ---------- subhead (nuemery / sekcje) ---------- */
+.subhead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 1.1rem 0 0.55rem;
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0.4rem 0 0;
+}
+
+.subhead__hint {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+/* ---------- emergency numbers ---------- */
+.emergency-list { overflow: hidden; margin: 0 0 1rem; }
+
+.emergency-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.emergency-item + .emergency-item { border-top: 1px solid var(--border); }
+
+.emergency-item:active { background: var(--surface-2); }
+
+.emergency-item__main { flex: 1; min-width: 0; }
+
+.emergency-item__title { display: block; font-weight: 700; font-size: var(--fs-md); }
+
+.emergency-item__desc { display: block; color: var(--muted); font-size: var(--fs-sm); margin-top: 0.1rem; }
+
+.emergency-item__value {
+  flex-shrink: 0;
+  font-weight: 800;
+  font-size: var(--fs-md);
+  color: var(--spain-red);
+  background: var(--spain-red-soft);
+  border: 1px solid var(--spain-red);
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius);
+  white-space: nowrap;
+}
+
+/* ---------- phrases ---------- */
+.phrase-list { overflow: hidden; margin-bottom: 0.4rem; }
+
+.phrase-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 0.35rem 0.8rem;
+  padding: 0.75rem 1rem;
+}
+
+.phrase-row + .phrase-row { border-top: 1px solid var(--border); }
+
+.phrase-row__pl { font-size: var(--fs-sm); color: var(--muted); font-weight: 600; }
+
+.phrase-row__es {
+  font-size: var(--fs-md);
+  font-weight: 800;
+  color: var(--text);
+  grid-column: 1 / -1;
+}
+
+.phrase-row__say {
+  font-size: var(--fs-sm);
+  color: var(--spain-gold);
+  font-weight: 600;
+  font-style: italic;
+}
+
+/* ---------- google maps pins ---------- */
+.pin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex-shrink: 0;
+  border-radius: 0.65rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: var(--fs-lg);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.pin-btn:active { transform: scale(0.92); border-color: var(--spain-red); }
+
+.pin-btn--inline {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: var(--fs-md);
+}
+
+.map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 800;
+  font-size: var(--fs-md);
+  color: var(--signal);
+  text-decoration: none;
+  background: var(--signal-ink);
+  border: 1px solid var(--signal);
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-lg);
+}
+
+.map-link:active { transform: scale(0.97); }
+
+/* ---------- rows with inline pin ---------- */
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.check-row + .check-row { border-top: 1px solid var(--border); }
+
+.check-row .check-item { flex: 1; width: auto; }
+
+.check-row .check-item + .check-item { border-top: none; }
+
+/* ---------- attraction card head ---------- */
+.attraction-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.attraction-card__head .attraction-card__title {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
 
 /* ---------- misc ---------- */
 .splash {

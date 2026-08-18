@@ -4,6 +4,7 @@ const $app = document.getElementById("app");
 const $tabbar = document.getElementById("tabbar");
 
 const TRIP = window.__TRIP__ || { cities: [], routes: [], packing: [], generalTips: [], summaryAttractions: [], summaryRestaurants: [] };
+const PHRASES = window.__PHRASES__ || { groups: [], pronunciation: [], emergency: [] };
 
 const LS = {
   checks: "hiszpania.checks",
@@ -14,6 +15,53 @@ let state = {
   tab: "home",
   zoom: clamp(readZoom(), 0, 8),
   view: null, // { kind: 'city', id } | { kind: 'day', cityId, num }
+};
+
+// ---------- pinezki Google Maps (polecane miejsca) ----------
+// Klucz: "idMiasta|slug(nazwy)". Polożenie przybliżone (centroid miasta/miejsca).
+const _P = (lat, lng, label) => ({ lat, lng, label });
+const PLACES = {
+  // miasta
+  "malaga": _P(36.7213, -4.4213, "Málaga"),
+  "tolox": _P(36.6583, -4.9043, "Tolox"),
+  "estepona": _P(36.4280, -5.1463, "Estepona"),
+  // atrakcje — Malaga
+  "malaga|alcazaba": _P(36.7205, -4.4161, "Alcazaba, Málaga"),
+  "malaga|zamek gibralfaro": _P(36.7235, -4.4115, "Castillo de Gibralfaro"),
+  "malaga|muzeum picassa": _P(36.7214, -4.4190, "Museo Picasso Málaga"),
+  "malaga|plaza la malagueta": _P(36.7170, -4.4040, "Playa La Malagueta"),
+  "malaga|centrum historyczne calle larios": _P(36.7199, -4.4217, "Calle Larios, Málaga"),
+  // atrakcje — Tolox
+  "tolox|balneario de tolox": _P(36.6660, -4.9090, "Balneario de Tolox"),
+  "tolox|spacer po miasteczku": _P(36.6583, -4.9043, "Tolox — centrum"),
+  "tolox|sierra de las nieves": _P(36.6890, -4.9600, "Parque Nacional Sierra de las Nieves"),
+  "tolox|sierra de las nieves trekking": _P(36.6890, -4.9600, "Parque Nacional Sierra de las Nieves"),
+  "tolox|ronda": _P(36.7462, -5.1650, "Ronda"),
+  "tolox|ronda opcjonalnie": _P(36.7462, -5.1650, "Ronda"),
+  // atrakcje — Estepona
+  "estepona|stare miasto kwiaty": _P(36.4290, -5.1450, "Casco Antiguo, Estepona"),
+  "estepona|orchidarium": _P(36.4277, -5.1442, "Orquidario de Estepona"),
+  "estepona|orchidarium estepona": _P(36.4277, -5.1442, "Orquidario de Estepona"),
+  "estepona|mural route": _P(36.4270, -5.1455, "Ruta de Murales, Estepona"),
+  "estepona|plaza playa de la rada": _P(36.4155, -5.1560, "Playa de la Rada, Estepona"),
+  "estepona|marbella": _P(36.5100, -4.8850, "Marbella"),
+  "estepona|marbella opcjonalnie": _P(36.5100, -4.8850, "Marbella"),
+  // restauracje — Malaga
+  "malaga|el pimpi": _P(36.7208, -4.4195, "El Pimpi, Málaga"),
+  "malaga|mercado central de atarazanas": _P(36.7180, -4.4230, "Mercado de Atarazanas, Málaga"),
+  "malaga|mercado atarazanas": _P(36.7180, -4.4230, "Mercado de Atarazanas, Málaga"),
+  "malaga|restaurante jose carlos garcia": _P(36.7167, -4.4134, "Restaurante José Carlos García"),
+  "malaga|la cosmopolita": _P(36.7190, -4.4210, "La Cosmopolita, Málaga"),
+  "malaga|cafe con libros": _P(36.7220, -4.4210, "Café con Libros, Málaga"),
+  // restauracje — Tolox
+  "tolox|bar restaurante el mirador": _P(36.6570, -4.9030, "Bar Restaurante El Mirador, Tolox"),
+  "tolox|restaurante balneario de tolox": _P(36.6660, -4.9090, "Restaurante Balneario de Tolox"),
+  "tolox|bar la plaza": _P(36.6590, -4.9040, "Bar La Plaza, Tolox"),
+  // restauracje — Estepona
+  "estepona|el gastronomo": _P(36.4290, -5.1450, "El Gastrónomo, Estepona"),
+  "estepona|la escollera": _P(36.4180, -5.1530, "La Escollera, Estepona"),
+  "estepona|chiringuito la rada": _P(36.4160, -5.1550, "Chiringuito La Rada, Estepona"),
+  "estepona|restaurante meson el rosario": _P(36.4280, -5.1455, "Mesón El Rosario, Estepona"),
 };
 
 // ---------- pomocnicze ----------
@@ -28,6 +76,34 @@ function escapeHtml(s) {
     .replace(/>/g, "&" + "gt;")
     .replace(/"/g, "&" + "quot;")
     .replace(/'/g, "&#39;");
+}
+
+function slug(name) {
+  return String(name || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function mapsUrl(label, lat, lng) {
+  return "https://maps.google.com/?q=" + encodeURIComponent(label) + "@" + lat + "," + lng;
+}
+
+function placeByKey(cityId, name) {
+  return PLACES[cityId + "|" + slug(name)];
+}
+
+function pinAnchor(cityId, name, extraClass) {
+  const p = placeByKey(cityId, name);
+  if (!p) return "";
+  const href = mapsUrl(p.label, p.lat, p.lng);
+  return (
+    '<a class="pin-btn ' + (extraClass || "") + '" href="' + escapeHtml(href) + '" target="_blank" rel="noopener" ' +
+    'aria-label="Zobacz na mapie: ' + escapeHtml(p.label) + '" title="Zobacz na mapie">📍</a>'
+  );
 }
 
 function readZoom() {
@@ -91,6 +167,14 @@ function sectionHead(kicker, title, lead) {
     (kicker ? `<p class="section__kicker">${escapeHtml(kicker)}</p>` : "") +
     `<h2 class="section__title">${escapeHtml(title)}</h2>` +
     (lead ? `<p class="section__lead">${escapeHtml(lead)}</p>` : "") +
+    `</div>`
+  );
+}
+
+function subhead(text, hint) {
+  return (
+    `<div class="subhead"><span>${text}</span>` +
+    (hint ? `<span class="subhead__hint">${escapeHtml(hint)}</span>` : "") +
     `</div>`
   );
 }
@@ -265,7 +349,13 @@ function renderChecklists() {
   html += `<div class="check-group panel">`;
   html += `<div class="check-group__title">🏛️ Atrakcje (${attractionItems.filter((i) => isDone(checks, i.key)).length}/${attractionItems.length})</div>`;
   attractionItems.forEach((it) => {
-    html += checklistItem(it.key, it.label, it.meta, isDone(checks, it.key));
+    // pinezka po prawej, jeśli miejsce jest w bazie
+    const pin = pinAnchor(slug(it.meta), it.label, "pin-btn--inline");
+    html +=
+      '<div class="check-row">' +
+      checklistItem(it.key, it.label, it.meta, isDone(checks, it.key)) +
+      pin +
+      "</div>";
   });
   html += `</div>`;
 
@@ -273,7 +363,12 @@ function renderChecklists() {
   html += `<div class="check-group panel">`;
   html += `<div class="check-group__title">🍽️ Restauracje (${restaurantItems.filter((i) => isDone(checks, i.key)).length}/${restaurantItems.length})</div>`;
   restaurantItems.forEach((it) => {
-    html += checklistItem(it.key, it.label, it.meta, isDone(checks, it.key));
+    const pin = pinAnchor(slug(it.meta), it.label, "pin-btn--inline");
+    html +=
+      '<div class="check-row">' +
+      checklistItem(it.key, it.label, it.meta, isDone(checks, it.key)) +
+      pin +
+      "</div>";
   });
   html += `</div>`;
 
@@ -289,6 +384,54 @@ function renderChecklists() {
   html += `</div>`;
 
   html += `<div class="safe-bottom"></div></div>`;
+  return html;
+}
+
+function renderPhrases() {
+  let html = `<div>`;
+  html += sectionHead("Rozmówki", "Hiszpański w pigułce", "Przydatne zwroty z wymową oraz numery alarmowe.");
+
+  html += `<div class="content">`;
+
+  // Numery alarmowe
+  html += subhead("📞 Numery obowiązujące w Hiszpanii", "dotknij, aby zadzwonić");
+  html += `<div class="emergency-list panel">`;
+  PHRASES.emergency.forEach((e) => {
+    html +=
+      `<a class="emergency-item" href="tel:${escapeHtml(e.tel)}">` +
+      `<span class="emergency-item__main">` +
+      `<span class="emergency-item__title">${escapeHtml(e.title)}</span>` +
+      (e.desc ? `<span class="emergency-item__desc">${escapeHtml(e.desc)}</span>` : "") +
+      `</span>` +
+      `<span class="emergency-item__value">📞 ${escapeHtml(e.value)}</span>` +
+      `</a>`;
+  });
+  html += `</div>`;
+
+  // Grupy słownictwa
+  PHRASES.groups.forEach((g) => {
+    html += subhead(g.title, "· " + (g.hint || ""));
+    html += `<div class="phrase-list panel">`;
+    g.items.forEach((it) => {
+      html +=
+        `<div class="phrase-row">` +
+        `<span class="phrase-row__pl">${escapeHtml(it.pl)}</span>` +
+        `<span class="phrase-row__es">${escapeHtml(it.es)}</span>` +
+        `<span class="phrase-row__say">${escapeHtml(it.say)}</span>` +
+        `</div>`;
+    });
+    html += `</div>`;
+  });
+
+  // Zasady wymowy
+  html += subhead("🔤 Wymowa w skrócie", "");
+  html += `<div class="info-table panel">`;
+  (PHRASES.pronunciation || []).forEach((r) => {
+    html += `<div class="info-row"><div class="info-row__k">${escapeHtml(r.rule)}</div><div class="info-row__v">${escapeHtml(r.example)}</div></div>`;
+  });
+  html += `</div>`;
+
+  html += `</div><div class="safe-bottom"></div></div>`;
   return html;
 }
 
@@ -355,17 +498,56 @@ function renderCity(city) {
     )
     .join("");
 
+  const cityMap = (() => {
+    const p = PLACES[city.id];
+    if (!p) return "";
+    const href = mapsUrl(p.label, p.lat, p.lng);
+    return `<a class="map-link" href="${escapeHtml(href)}" target="_blank" rel="noopener">📍 Zobacz na mapie</a>`;
+  })();
+
   return (
     `<div>` +
     `<div class="detail__header"><button class="back-btn" data-action="back">‹ Wróć</button></div>` +
     `<h1 class="detail__title">📍 ${escapeHtml(city.name)}</h1>` +
     `<div class="detail__meta">${chip(city.dates, "chip--signal")}${chip(city.tagline, "")}${city.accommodation ? chip("🏨 " + city.accommodation, "chip--terra") : ""}</div>` +
+    (cityMap ? `<div class="detail__body" style="padding-bottom:0">${cityMap}</div>` : "") +
     `<div class="detail__body">` +
     `<div class="day-list panel">` +
     `<div class="check-group__title">Dni w tym mieście</div>` +
     dayButtons +
     `</div>` +
     `</div><div class="safe-bottom"></div></div>`
+  );
+}
+
+function restaurantRow(r, done, cityId) {
+  const pin = pinAnchor(cityId, r.name, "pin-btn--inline");
+  return (
+    `<div class="check-row${done ? " check-row--done" : ""}">` +
+    `<button class="check-item${done ? " is-done" : ""}" data-action="toggle" data-key="${escapeHtml(r.key)}">` +
+    `<span class="check-item__box">${done ? "✓" : ""}</span>` +
+    `<span class="check-item__label">${escapeHtml(r.name)}` +
+    `<div class="check-item__meta">${escapeHtml([r.type, r.price, r.reservation].filter(Boolean).join(" · "))}</div></span>` +
+    `</button>` +
+    pin +
+    `</div>`
+  );
+}
+
+function attractionCard(a, done, cityId) {
+  const pin = pinAnchor(cityId, a.name, "pin-btn--inline");
+  const toggleKey = "attr|" + cityId + "|" + a.name.trim();
+  return (
+    `<div class="attraction-card panel">` +
+    `<div class="attraction-card__head">` +
+    `<button class="attraction-card__title" data-action="toggle" data-key="${escapeHtml(toggleKey)}">` +
+    `<span>${done ? "✅" : "⬜"}</span><span>${escapeHtml(a.name)}</span>` +
+    `</button>` +
+    pin +
+    `</div>` +
+    (a.desc ? `<div class="attraction-card__desc">${escapeHtml(a.desc)}</div>` : "") +
+    (a.extras && a.extras.length ? `<div class="attraction-card__extra">${a.extras.map(escapeHtml).join("<br>")}</div>` : "") +
+    `</div>`
   );
 }
 
@@ -377,31 +559,11 @@ function renderDay(city, day) {
     .join("");
 
   const attractionCards = day.attractions
-    .map((a) => {
-      const done = isDone(checks, "attr|" + city.id + "|" + a.name.trim());
-      return (
-        `<div class="attraction-card panel">` +
-        `<button class="attraction-card__title" data-action="toggle" data-key="attr|${escapeHtml(city.id)}|${escapeHtml(a.name.trim())}" style="width:100%;background:none;border:none;padding:0;color:inherit;text-align:left">` +
-        `<span>${done ? "✅" : "⬜"}</span><span>${escapeHtml(a.name)}</span>` +
-        `</button>` +
-        (a.desc ? `<div class="attraction-card__desc">${escapeHtml(a.desc)}</div>` : "") +
-        (a.extras && a.extras.length ? `<div class="attraction-card__extra">${a.extras.map(escapeHtml).join("<br>")}</div>` : "") +
-        `</div>`
-      );
-    })
+    .map((a) => attractionCard(a, isDone(checks, "attr|" + city.id + "|" + a.name.trim()), city.id))
     .join("");
 
   const restaurantRows = day.restaurants
-    .map((r) => {
-      const done = isDone(checks, r.key);
-      return (
-        `<button class="check-item${done ? " is-done" : ""}" data-action="toggle" data-key="${escapeHtml(r.key)}">` +
-        `<span class="check-item__box">${done ? "✓" : ""}</span>` +
-        `<span class="check-item__label">${escapeHtml(r.name)}` +
-        `<div class="check-item__meta">${escapeHtml([r.type, r.price, r.reservation].filter(Boolean).join(" · "))}</div></span>` +
-        `</button>`
-      );
-    })
+    .map((r) => restaurantRow(r, isDone(checks, r.key), city.id))
     .join("");
 
   const tipsBlock = day.tips && day.tips.length
@@ -460,7 +622,9 @@ function render() {
           ? renderDays()
           : state.tab === "checklists"
             ? renderChecklists()
-            : renderInfo();
+            : state.tab === "phrases"
+              ? renderPhrases()
+              : renderInfo();
   }
 
   $app.innerHTML = html;
