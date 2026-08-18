@@ -1,64 +1,59 @@
-"""Generuje ikony aplikacji (adaptive + legacy) w motywie Hiszpanii.
-Słońce w barwach flagi Hiszpanii (złoto/czerwień) + pinezka mapa na granatowym tle.
+"""Generuje ikony aplikacji (adaptive + legacy) w stylu future-tech minimalism.
+Motyw: granatowe tło z delikatną siatką + znak "null pointer" (ramka + okrąg +
+przekątna + kropka) w kolorze cyan — znak NullPointerStudio.
+
+Generuje też favicon dla www.
 """
 import math
 import os
 from PIL import Image, ImageDraw
 
-NAVY = (11, 16, 23, 255)      # ink tła (spójne z motywem)
+NAVY = (11, 16, 23, 255)
 NAVY_OPAQUE = (11, 16, 23, 255)
-GOLD = (255, 196, 34, 255)
-RED = (198, 11, 30, 255)
-WHITE = (255, 244, 224, 255)
+CYAN = (77, 212, 224, 255)
+CYAN_SOFT = (110, 228, 238, 90)
+GOLD = (255, 196, 0, 255)
 
 RES = os.path.dirname(os.path.abspath(__file__))
 MIPMAP = os.path.join(RES, "android", "app", "src", "main", "res")
 
 
-def sun_motif(draw, cx, cy, R):
-    """Rysuje słońce (promienie naprzemienne złoto/czerwień) + białą pinezkę."""
-    n = 8
-    half = math.pi / n
-    ray_inner = R * 0.42
-    ray_outer = R * 0.98
-    disc_r = R * 0.34
-    for i in range(n):
-        ang = i * (2 * math.pi / n) - math.pi / 2
-        color = GOLD if i % 2 == 0 else RED
-        a1 = ang - half
-        a2 = ang + half
-        pts = [
-            (cx + ray_inner * math.cos(a1), cy + ray_inner * math.sin(a1)),
-            (cx + ray_outer * math.cos(ang), cy + ray_outer * math.sin(ang)),
-            (cx + ray_inner * math.cos(a2), cy + ray_inner * math.sin(a2)),
-        ]
-        draw.polygon(pts, fill=color)
-    draw.ellipse([cx - disc_r, cy - disc_r, cx + disc_r, cy + disc_r], fill=GOLD)
-
-    # biała pinezka (lokalizacja / przewodnik)
-    head_r = R * 0.13
-    hx, hy = cx, cy - R * 0.04
-    draw.ellipse([hx - head_r, hy - head_r, hx + head_r, hy + head_r], fill=WHITE)
-    tip = (cx, cy + R * 0.22)
-    draw.polygon(
-        [(hx - head_r * 0.88, hy + head_r * 0.5), (hx + head_r * 0.88, hy + head_r * 0.5), tip],
-        fill=WHITE,
-    )
-    # otwór pinezki
-    draw.ellipse([hx - head_r * 0.38, hy - head_r * 0.38, hx + head_r * 0.38, hy + head_r * 0.38], fill=GOLD)
+def draw_grid(d, size, step, color, width=1):
+    s = size
+    k = step
+    n = 0
+    while k * n < s:
+        d.line([(k * n, 0), (k * n, s)], fill=color, width=width)
+        d.line([(0, k * n), (s, k * n)], fill=color, width=width)
+        n += 1
 
 
-def render(size, with_bg, round_mask=False):
+def null_mark(d, cx, cy, R, color=CYAN):
+    """Znak null pointer: ramka, okrąg, przekątna, kropka (wg specu Logo)."""
+    R = int(R)
+    # ramka kwadratowa (opacity ~0.5)
+    d.rectangle([cx - R, cy - R, cx + R, cy + R], outline=(color[0], color[1], color[2], 130), width=max(1, R // 8))
+    # okrąg
+    cr = R * 0.58
+    d.ellipse([cx - cr, cy - cr, cx + cr, cy + cr], outline=color, width=max(1, R // 7))
+    # przekątna (od lewego-górnego do prawego-dolnego rogu okręgu)
+    k = 0.707 * cr  # cos 45
+    d.line([(cx - k, cy - k), (cx + k, cy + k)], fill=color, width=max(1, R // 9))
+    # kropka w centrum
+    dr = R * 0.12
+    d.ellipse([cx - dr, cy - dr, cx + dr, cy + dr], fill=color)
+
+
+def render(size, with_bg, round_mask=False, motif_scale=0.82):
     img = Image.new("RGBA", (size, size), NAVY if with_bg else (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     cx = size / 2
     cy = size / 2
-    # motyw w bezpiecznej strefie (adaptive safe zone = 66% średnicy)
     if with_bg:
-        motif_R = size / 2 * 0.92
-    else:
-        motif_R = size / 2 * 0.58
-    sun_motif(d, cx, cy, motif_R)
+        draw_grid(d, size, max(8, size // 12), (255, 255, 255, 14))
+    # adaptive foreground: mniejsza safe zone (66%)
+    R = (size / 2) * (0.34 if not with_bg else motif_scale * 0.42)
+    null_mark(d, int(cx), int(cy), int(R), CYAN)
     if round_mask:
         mask = Image.new("L", (size, size), 0)
         ImageDraw.Draw(mask).ellipse([0, 0, size - 1, size - 1], fill=255)
@@ -86,4 +81,4 @@ WWW = os.path.join(RES, "www")
 save(render(192, with_bg=True), os.path.join(WWW, "favicon.png"))
 save(render(512, with_bg=True), os.path.join(WWW, "icon.png"))
 
-print("Ikony wygenerowane (app + www).")
+print("Ikony future-tech wygenerowane (app + www).")

@@ -12,12 +12,17 @@ const LS = {
   fx: "hiszpania.fx",
   fuel: "hiszpania.fuel",
   weather: "hiszpania.weather",
+  current: "hiszpania.current",
+  news: "hiszpania.news",
 };
+
+const ZOOM_MIN = -3;
+const ZOOM_MAX = 8;
 
 let state = {
   tab: "home",
-  zoom: clamp(readZoom(), 0, 8),
-  view: null, // { kind: 'city', id } | { kind: 'day', cityId, num }
+  zoom: clamp(readZoom(), ZOOM_MIN, ZOOM_MAX),
+  view: null,
 };
 
 // ---------- pinezki Google Maps (polecane miejsca) ----------
@@ -26,46 +31,38 @@ const PLACES = {
   "malaga": _P(36.7213, -4.4213, "Málaga"),
   "tolox": _P(36.6583, -4.9043, "Tolox"),
   "estepona": _P(36.4280, -5.1463, "Estepona"),
-  // atrakcje — Malaga
   "malaga|alcazaba": _P(36.7205, -4.4161, "Alcazaba, Málaga"),
   "malaga|zamek gibralfaro": _P(36.7235, -4.4115, "Castillo de Gibralfaro"),
   "malaga|muzeum picassa": _P(36.7214, -4.4190, "Museo Picasso Málaga"),
   "malaga|plaza la malagueta": _P(36.7170, -4.4040, "Playa La Malagueta"),
   "malaga|centrum historyczne calle larios": _P(36.7199, -4.4217, "Calle Larios, Málaga"),
-  // atrakcje — Tolox
   "tolox|balneario de tolox": _P(36.6660, -4.9090, "Balneario de Tolox"),
   "tolox|spacer po miasteczku": _P(36.6583, -4.9043, "Tolox — centrum"),
   "tolox|sierra de las nieves": _P(36.6890, -4.9600, "Parque Nacional Sierra de las Nieves"),
   "tolox|sierra de las nieves trekking": _P(36.6890, -4.9600, "Parque Nacional Sierra de las Nieves"),
   "tolox|ronda": _P(36.7462, -5.1650, "Ronda"),
   "tolox|ronda opcjonalnie": _P(36.7462, -5.1650, "Ronda"),
-  // atrakcje — Estepona
   "estepona|stare miasto kwiaty": _P(36.4290, -5.1450, "Casco Antiguo, Estepona"),
   "estepona|orchidarium": _P(36.4277, -5.1442, "Orquidario de Estepona"),
-  "estepona|orchidarium estepona": _P(36.4277, -5.1442, "Orquidario de Estepona"),
   "estepona|mural route": _P(36.4270, -5.1455, "Ruta de Murales, Estepona"),
   "estepona|plaza playa de la rada": _P(36.4155, -5.1560, "Playa de la Rada, Estepona"),
   "estepona|marbella": _P(36.5100, -4.8850, "Marbella"),
   "estepona|marbella opcjonalnie": _P(36.5100, -4.8850, "Marbella"),
-  // restauracje — Malaga
   "malaga|el pimpi": _P(36.7208, -4.4195, "El Pimpi, Málaga"),
   "malaga|mercado central de atarazanas": _P(36.7180, -4.4230, "Mercado de Atarazanas, Málaga"),
   "malaga|mercado atarazanas": _P(36.7180, -4.4230, "Mercado de Atarazanas, Málaga"),
   "malaga|restaurante jose carlos garcia": _P(36.7167, -4.4134, "Restaurante José Carlos García"),
   "malaga|la cosmopolita": _P(36.7190, -4.4210, "La Cosmopolita, Málaga"),
   "malaga|cafe con libros": _P(36.7220, -4.4210, "Café con Libros, Málaga"),
-  // restauracje — Tolox
   "tolox|bar restaurante el mirador": _P(36.6570, -4.9030, "Bar Restaurante El Mirador, Tolox"),
-  "tolox|restaurante balneario de tolox": _P(36.6660, -4.9090, "Restaurante Balneario de Tolox"),
+  "tolox|restaurante balneario": _P(36.6660, -4.9090, "Restaurante Balneario de Tolox"),
   "tolox|bar la plaza": _P(36.6590, -4.9040, "Bar La Plaza, Tolox"),
-  // restauracje — Estepona
   "estepona|el gastronomo": _P(36.4290, -5.1450, "El Gastrónomo, Estepona"),
   "estepona|la escollera": _P(36.4180, -5.1530, "La Escollera, Estepona"),
   "estepona|chiringuito la rada": _P(36.4160, -5.1550, "Chiringuito La Rada, Estepona"),
   "estepona|restaurante meson el rosario": _P(36.4280, -5.1455, "Mesón El Rosario, Estepona"),
 };
 
-// słowne dopasowania miejsc w opisach "planu dnia" → klucz pinezki
 const PIN_ALIASES = {
   malaga: [
     ["centrum historyczn", "malaga|centrum historyczne calle larios"],
@@ -97,14 +94,12 @@ const PIN_ALIASES = {
   ],
 };
 
-// współrzędne miast do pogody
 const CITIES_COORDS = {
   malaga: { lat: 36.7213, lng: -4.4213 },
   tolox: { lat: 36.6583, lng: -4.9043 },
   estepona: { lat: 36.4280, lng: -5.1463 },
 };
 
-// WMO weather code → [ikona, opis]
 const WMO = {
   0: ["☀️", "Słonecznie"],
   1: ["🌤️", "Przeważnie słonecznie"],
@@ -115,8 +110,6 @@ const WMO = {
   51: ["🌦️", "Mżawka"],
   53: ["🌦️", "Mżawka"],
   55: ["🌦️", "Mżawka"],
-  56: ["🌦️", "Mżawka"],
-  57: ["🌦️", "Mżawka"],
   61: ["🌧️", "Lekki deszcz"],
   63: ["🌧️", "Deszcz"],
   65: ["🌧️", "Mocny deszcz"],
@@ -136,10 +129,15 @@ const WMO = {
   99: ["⛈️", "Burza z gradem"],
 };
 
-// ---------- live data (FX / paliwo / pogoda) ----------
+const STORM_CODES = new Set([95, 96, 99]);
+const RAIN_CODES = new Set([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82]);
+const HEAT_T = 34;
+
 let WX_BY_DATE = {};
 let FX = null;
 let FUEL = null;
+let CURRENT = null;
+let NEWS = null;
 let activeDay = todayStr();
 
 // ---------- pomocnicze ----------
@@ -167,7 +165,7 @@ function slug(name) {
 }
 
 function mapsUrl(label, lat, lng) {
-  return "https://maps.google.com/?q=" + encodeURIComponent(label) + "@" + lat + "," + lng;
+  return "https://maps.google.com/?q=" + encodeURIComponent(label + " @") + lat + "," + lng;
 }
 
 function placeByKey(cityId, name) {
@@ -225,10 +223,10 @@ function toggleCheck(key) {
   if (map[key]) delete map[key];
   else map[key] = true;
   saveChecks(map);
-  render(true); // zachowaj pozycję przewijania
+  render(true);
 }
 
-// ---------- zoom (A+/A-) ----------
+// ---------- zoom (A-/A+) ----------
 function applyZoom() {
   document.documentElement.style.setProperty("--fs-base", (state.zoom * 0.125 + 1) + "rem");
   localStorage.setItem(LS.zoom, String(state.zoom));
@@ -237,12 +235,12 @@ function applyZoom() {
 function updateZoomButtons() {
   const minus = document.getElementById("zoomOut");
   const plus = document.getElementById("zoomIn");
-  if (minus) minus.disabled = state.zoom <= 0;
-  if (plus) plus.disabled = state.zoom >= 8;
+  if (minus) minus.disabled = state.zoom <= ZOOM_MIN;
+  if (plus) plus.disabled = state.zoom >= ZOOM_MAX;
 }
 
 function zoomBy(delta) {
-  state.zoom = clamp(state.zoom + delta, 0, 8);
+  state.zoom = clamp(state.zoom + delta, ZOOM_MIN, ZOOM_MAX);
   applyZoom();
   updateZoomButtons();
 }
@@ -275,7 +273,7 @@ function saveJSON(key, v) {
   }
 }
 
-// ---------- kurs EUR/PLN (odświeżany o północy) ----------
+// ---------- kurs EUR/PLN ----------
 async function refreshFX() {
   try {
     const r = await fetch("https://api.frankfurter.dev/v1/latest?base=EUR&symbols=PLN");
@@ -283,12 +281,10 @@ async function refreshFX() {
     if (j && j.rates && j.rates.PLN) {
       FX = { rate: j.rates.PLN, date: todayStr(), at: timeStr() };
       saveJSON(LS.fx, FX);
-      return true;
     }
   } catch {
     /* offline */
   }
-  return false;
 }
 
 function loadFX() {
@@ -300,7 +296,7 @@ function loadFX() {
   return true;
 }
 
-// ---------- średnia cena paliwa w Hiszpanii ----------
+// ---------- cena paliwa ----------
 async function refreshFuel() {
   try {
     const r = await fetch("https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroProvincia/29");
@@ -319,12 +315,10 @@ async function refreshFuel() {
     if (n > 0) {
       FUEL = { avg: +(sum / n).toFixed(3), date: todayStr(), at: timeStr() };
       saveJSON(LS.fuel, FUEL);
-      return true;
     }
   } catch {
     /* offline */
   }
-  return false;
 }
 
 function loadFuel() {
@@ -336,7 +330,7 @@ function loadFuel() {
   return true;
 }
 
-// ---------- pogoda (Open-Meteo, raz dziennie) ----------
+// ---------- pogoda ----------
 async function refreshWeather() {
   const byDate = {};
   await Promise.all(
@@ -351,8 +345,10 @@ async function refreshWeather() {
         const j = await r.json();
         if (j && j.daily && j.daily.time) {
           j.daily.time.forEach((t, i) => {
-            const w = WMO[j.daily.weather_code[i]] || ["🌡️", "Zmienna"];
+            const code = j.daily.weather_code[i];
+            const w = WMO[code] || ["🌡️", "Zmienna"];
             byDate[t] = {
+              code,
               icon: w[0],
               label: w[1],
               tmax: Math.round(j.daily.temperature_2m_max[i]),
@@ -378,22 +374,120 @@ function loadWeather() {
   return true;
 }
 
+async function refreshCurrent() {
+  try {
+    const co = CITIES_COORDS.malaga;
+    const r = await fetch(
+      "https://api.open-meteo.com/v1/forecast?latitude=" + co.lat + "&longitude=" + co.lng +
+      "&current_weather=true"
+    );
+    const j = await r.json();
+    if (j && j.current_weather) {
+      const c = j.current_weather;
+      const w = WMO[c.weathercode] || ["🌡️", "Zmienna"];
+      CURRENT = { temp: Math.round(c.temperature_2m), code: c.weathercode, icon: w[0], label: w[1] };
+      saveJSON(LS.current, { date: todayStr(), value: CURRENT });
+    }
+  } catch {
+    /* offline */
+  }
+}
+
+function loadCurrent() {
+  const c = loadJSON(LS.current);
+  if (c && c.date === todayStr() && c.value) {
+    CURRENT = c.value;
+    return false;
+  }
+  return true;
+}
+
+// ---------- news (Wikimedia OnThisDay, es) ----------
+async function refreshNews() {
+  try {
+    const d = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const r = await fetch(
+      "https://api.wikimedia.org/feed/v1/wikipedia/es/onthisday/events/" + mm + "/" + dd,
+      { headers: { "User-Agent": "PrzewodnikAndaluzja/1.0 (osobisty; kontakt test@example.com)" } }
+    );
+    const j = await r.json();
+    const evs = (j && j.events) || [];
+    if (!evs.length) return;
+    const ES = /españa|español|madrid|barcelona|andalu|sevill|córdoba|granada|málaga|malaga|cádiz|huelva|jaén|española/i;
+    const pick = evs.find((e) => ES.test(e.text)) || evs[0];
+    if (pick && pick.text) {
+      NEWS = { text: pick.text };
+      saveJSON(LS.news, { date: todayStr(), text: pick.text });
+    }
+  } catch {
+    /* offline */
+  }
+}
+
+function loadNews() {
+  const c = loadJSON(LS.news);
+  if (c && c.date === todayStr() && c.text) {
+    NEWS = { text: c.text };
+    return false;
+  }
+  return true;
+}
+
+function wxSeverity(w) {
+  if (!w) return "";
+  if (STORM_CODES.has(w.code)) return "storm";
+  if (w.tmax >= HEAT_T) return "hot";
+  if (RAIN_CODES.has(w.code)) return "rain";
+  return "";
+}
+
+function tripDays() {
+  const days = [];
+  TRIP.cities.forEach((c) => c.days.forEach((d) => days.push({ city: c, day: d })));
+  days.sort((a, b) => a.day.num - b.day.num);
+  return days;
+}
+
 function weatherChip(dateStr) {
   const w = dateStr ? WX_BY_DATE[dateStr] : null;
   if (!w) return "";
+  const sev = wxSeverity(w);
+  const cls = sev ? " wx-chip--" + sev : "";
+  const badge =
+    sev === "storm" ? '<b class="wx-badge">⛈</b>'
+      : sev === "rain" ? '<b class="wx-badge">☔</b>'
+        : sev === "hot" ? '<b class="wx-badge">🔥</b>'
+          : "";
   return (
-    '<span class="wx-chip" title="' + escapeHtml(w.label) + '">' +
+    '<span class="wx-chip' + cls + '" title="' + escapeHtml(w.label) + '">' +
     w.icon +
-    '<span>' + w.tmax + '°</span><span class="wx-chip__min">' + w.tmin + '°</span>' +
+    "<span>" + w.tmax + "°</span><span class=\"wx-chip__min\">" + w.tmin + "°</span>" +
+    badge +
     "</span>"
   );
 }
 
-// ---------- helpers renderujące ----------
-function iconFor(emoji) {
-  return `<span class="stat__icon" aria-hidden="true">${emoji}</span>`;
+// alerty pogodowe na najbliższe dni (zwięźle)
+function weatherAlerts() {
+  const seen = {};
+  const out = [];
+  tripDays().forEach(({ day }) => {
+    const w = WX_BY_DATE[day.date];
+    if (!w) return;
+    const sev = wxSeverity(w);
+    if (!sev || seen[sev]) return;
+    seen[sev] = true;
+    const label = day.dateLabel;
+    if (sev === "storm") out.push("⛈ burza · " + label);
+    else if (sev === "rain") out.push("☔ deszcz · " + label);
+    else if (sev === "hot") out.push("🔥 upał · " + label);
+  });
+  return out;
 }
 
+// ---------- helpers renderujące ----------
 function sectionHead(kicker, title, lead) {
   return (
     `<div class="section__head">` +
@@ -417,34 +511,53 @@ function chip(text, cls) {
   return `<span class="chip ${cls || ""}">${escapeHtml(text)}</span>`;
 }
 
-function metaStrip(pills) {
-  return (
-    `<div class="meta-strip">` +
-    pills.map((p, i) => `<span class="meta-pill${i === 0 ? " meta-pill--accent" : ""}">${escapeHtml(p)}</span>`).join("") +
-    `</div>`
-  );
+// ---------- pasek live (kurs/paliwo/pogoda/alert/news) ----------
+function renderLiveStrip() {
+  let stats = "";
+  stats +=
+    `<div class="live-cell"><span class="live-cell__k">Teraz Málaga</span>` +
+    `<span class="live-cell__v">${CURRENT ? CURRENT.icon + " " + CURRENT.temp + "°" : "…"}</span></div>`;
+  stats +=
+    `<div class="live-cell"><span class="live-cell__k">EUR/PLN</span>` +
+    `<span class="live-cell__v">${FX ? FX.rate.toFixed(3) : "…"} zł</span></div>`;
+  stats +=
+    `<div class="live-cell"><span class="live-cell__k">Benzyna 95</span>` +
+    `<span class="live-cell__v">${FUEL ? FUEL.avg.toFixed(3) : "…"} €/l</span></div>`;
+
+  let alerts = "";
+  const al = weatherAlerts();
+  if (al.length) {
+    alerts =
+      `<div class="live-alerts">` +
+      al.map((a) => `<span class="alert-badge">${escapeHtml(a)}</span>`).join("") +
+      `</div>`;
+  }
+
+  let news = "";
+  if (NEWS && NEWS.text) {
+    news = `<div class="news-line">📰 ${escapeHtml(NEWS.text)}</div>`;
+  }
+
+  const note =
+    `<div class="live-note"><span class="live-dot" aria-hidden="true"></span>` +
+    `<span class="mono-note">na żywo · odświeżane codziennie</span></div>`;
+
+  return `<div class="live-card panel"><div class="live-stats">${stats}</div>${alerts}${news}${note}</div>`;
 }
 
 // ---------- ekrany ----------
 function renderHome() {
-  const general = TRIP.general || {};
-  const days = [];
-  TRIP.cities.forEach((c) => c.days.forEach((d) => days.push({ city: c, day: d })));
-  days.sort((a, b) => a.day.num - b.day.num);
-
-  const pills = [];
-  pills.push("2 osoby");
-  pills.push(days.length + " dni");
-  pills.push(TRIP.cities.length + " miasta");
-  if (general["Transport"]) pills.push(general["Transport"]);
-  if (general["Budżet"]) pills.push(general["Budżet"]);
+  const days = tripDays();
 
   const hero =
     `<section class="hero">` +
     `<span class="hero__badge">🇪🇸 Hiszpania · wrzesień 2026</span>` +
     `<h1>Przewodnik po <span class="accent">Andaluzji</span></h1>` +
-    `<p class="hero__sub">Malaga → Tolox → Estepona · 9 dni dla 2 osób</p>` +
+    `<p class="hero__sub">Malaga → Tolox → Estepona · 9 dni · 2 osoby</p>` +
     `</section>`;
+
+  const liveWrap =
+    `<div class="content" style="padding-top:0.9rem">${renderLiveStrip()}</div>`;
 
   const cityList =
     `<section class="section">` +
@@ -481,16 +594,13 @@ function renderHome() {
       .join("") +
     `</div></section>`;
 
-  return `<div>${hero}${metaStrip(pills)}${cityList}${dayList}<div class="safe-bottom"></div></div>`;
+  return `<div>${hero}${liveWrap}${cityList}${dayList}<div class="safe-bottom"></div></div>`;
 }
 
 function renderDays() {
-  const days = [];
-  TRIP.cities.forEach((c) => c.days.forEach((d) => days.push({ city: c, day: d })));
-  days.sort((a, b) => a.day.num - b.day.num);
-
+  const days = tripDays();
   let html = `<div>`;
-  html += sectionHead("Plan podróży", "Wszystkie dni", "Dziewięć dni w Andaluzji — z prognozą pogody.");
+  html += sectionHead("Plan podróży", "Wszystkie dni", "Dziewięć dni w Andaluzji — z prognozą.");
   html += `<div class="day-list">`;
 
   let lastCity = "";
@@ -633,24 +743,6 @@ function renderPhrases() {
   return html;
 }
 
-function renderLiveCard() {
-  let rows = "";
-  rows +=
-    `<div class="live-row">` +
-    `<span class="live-row__k">Kurs EUR/PLN</span>` +
-    `<span class="live-row__v">1 € = ${FX ? FX.rate.toFixed(3) : "…"} zł</span>` +
-    `</div>`;
-  rows +=
-    `<div class="live-row">` +
-    `<span class="live-row__k">Benzyna 95 (Andaluzja)</span>` +
-    `<span class="live-row__v">${FUEL ? FUEL.avg.toFixed(3) + " €/l" : "…"}</span>` +
-    `</div>`;
-  const note =
-    `<div class="live-note"><span class="live-dot" aria-hidden="true"></span>` +
-    `<span class="mono-note">kurs/fuel aktualizowane codziennie · pogoda raz dziennie</span></div>`;
-  return `<div class="live-card panel">${rows}${note}</div>`;
-}
-
 function renderInfo() {
   const general = TRIP.general || {};
   const generalRows = Object.keys(general)
@@ -691,7 +783,7 @@ function renderInfo() {
     `<div class="content">` +
     `<div class="info-table panel">${generalRows}</div>` +
     `<div class="section__head" style="padding-left:0"><h2 class="section__title" style="font-size:var(--fs-xl)">Na żywo</h2></div>` +
-    renderLiveCard() +
+    renderLiveStrip() +
     `<div class="section__head" style="padding-left:0"><h2 class="section__title" style="font-size:var(--fs-xl)">Trasy samochodowe</h2></div>` +
     routeCards +
     `<div class="section__head" style="padding-left:0"><h2 class="section__title" style="font-size:var(--fs-xl)">Rzeczy do zabrania</h2></div>` +
@@ -822,7 +914,6 @@ function renderDay(city, day) {
   );
 }
 
-// ---------- render główny ----------
 function render(keepScroll) {
   const prevScroll = window.scrollY;
   let html = "";
@@ -884,19 +975,16 @@ function handleClick(e) {
     render();
     return;
   }
-
   if (action === "city") {
     state.view = { kind: "city", id: el.dataset.id };
     render();
     return;
   }
-
   if (action === "day") {
     state.view = { kind: "day", cityId: el.dataset.city, num: parseInt(el.dataset.num, 10) };
     render();
     return;
   }
-
   if (action === "goto-day") {
     const found = findDay(parseInt(el.dataset.num, 10));
     if (found) {
@@ -905,13 +993,11 @@ function handleClick(e) {
     }
     return;
   }
-
   if (action === "back") {
     state.view = null;
     render();
     return;
   }
-
   if (action === "toggle") {
     toggleCheck(el.dataset.key);
     return;
@@ -937,10 +1023,15 @@ function loadLive() {
   const needFx = loadFX();
   const needFuel = loadFuel();
   const needWx = loadWeather();
+  const needCurrent = loadCurrent();
+  const needNews = loadNews();
+
   return Promise.all([
-    needFx ? refreshFX() : Promise.resolve(true),
-    needFuel ? refreshFuel() : Promise.resolve(true),
-    needWx ? refreshWeather() : Promise.resolve(true),
+    needFx ? refreshFX() : Promise.resolve(),
+    needFuel ? refreshFuel() : Promise.resolve(),
+    needWx ? refreshWeather() : Promise.resolve(),
+    needCurrent ? refreshCurrent() : Promise.resolve(),
+    needNews ? refreshNews() : Promise.resolve(),
   ]).then(() => render(true));
 }
 
@@ -952,7 +1043,6 @@ function init() {
 
   loadLive();
 
-  // odświeżanie o północy (sprawdzane co minutę)
   setInterval(() => {
     const today = todayStr();
     if (today !== activeDay) {
