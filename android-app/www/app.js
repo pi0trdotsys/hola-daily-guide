@@ -379,13 +379,13 @@ async function refreshCurrent() {
     const co = CITIES_COORDS.malaga;
     const r = await fetch(
       "https://api.open-meteo.com/v1/forecast?latitude=" + co.lat + "&longitude=" + co.lng +
-      "&current_weather=true"
+      "&current=temperature_2m,weather_code"
     );
     const j = await r.json();
-    if (j && j.current_weather) {
-      const c = j.current_weather;
-      const w = WMO[c.weathercode] || ["🌡️", "Zmienna"];
-      CURRENT = { temp: Math.round(c.temperature_2m), code: c.weathercode, icon: w[0], label: w[1] };
+    const c = j && j.current;
+    if (c && Number.isFinite(c.temperature_2m)) {
+      const w = WMO[c.weather_code] || ["🌡️", "Zmienna"];
+      CURRENT = { temp: Math.round(c.temperature_2m), code: c.weather_code, icon: w[0], label: w[1] };
       saveJSON(LS.current, { date: todayStr(), value: CURRENT });
     }
   } catch {
@@ -395,14 +395,31 @@ async function refreshCurrent() {
 
 function loadCurrent() {
   const c = loadJSON(LS.current);
-  if (c && c.date === todayStr() && c.value) {
+  if (c && c.date === todayStr() && c.value && Number.isFinite(c.value.temp)) {
     CURRENT = c.value;
     return false;
   }
+  CURRENT = null;
   return true;
 }
 
-// ---------- news (Wikimedia OnThisDay, es) ----------
+// ---------- news (Wikimedia OnThisDay) z tłumaczeniem na polski ----------
+const NEWS_FALLBACK = "Dziś w Hiszpanii — słoneczna Andaluzja i lokalne fiesty. Sprawdź plan dnia poniżej.";
+
+async function translateEsPl(text) {
+  try {
+    const r = await fetch(
+      "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text.slice(0, 480)) + "&langpair=es|pl"
+    );
+    const j = await r.json();
+    const out = j && j.responseData && j.responseData.translatedText;
+    if (out && !/MYMEMORY|INVALID|PLEASE/i.test(out)) return out;
+  } catch {
+    /* offline */
+  }
+  return null;
+}
+
 async function refreshNews() {
   try {
     const d = new Date();
@@ -414,15 +431,24 @@ async function refreshNews() {
     );
     const j = await r.json();
     const evs = (j && j.events) || [];
-    if (!evs.length) return;
+    if (!evs.length) {
+      NEWS = { text: NEWS_FALLBACK };
+      saveJSON(LS.news, { date: todayStr(), text: NEWS_FALLBACK });
+      return;
+    }
     const ES = /españa|español|madrid|barcelona|andalu|sevill|córdoba|granada|málaga|malaga|cádiz|huelva|jaén|española/i;
     const pick = evs.find((e) => ES.test(e.text)) || evs[0];
     if (pick && pick.text) {
-      NEWS = { text: pick.text };
-      saveJSON(LS.news, { date: todayStr(), text: pick.text });
+      const pl = await translateEsPl(pick.text);
+      NEWS = { text: pl || NEWS_FALLBACK, es: pick.text };
+      saveJSON(LS.news, { date: todayStr(), text: NEWS.text });
+    } else {
+      NEWS = { text: NEWS_FALLBACK };
+      saveJSON(LS.news, { date: todayStr(), text: NEWS_FALLBACK });
     }
   } catch {
-    /* offline */
+    NEWS = { text: NEWS_FALLBACK };
+    saveJSON(LS.news, { date: todayStr(), text: NEWS_FALLBACK });
   }
 }
 
@@ -466,6 +492,34 @@ function weatherChip(dateStr) {
     "<span>" + w.tmax + "°</span><span class=\"wx-chip__min\">" + w.tmin + "°</span>" +
     badge +
     "</span>"
+  );
+}
+
+// pełny blok pogody w widoku dnia (z placeholderem, gdy data poza oknem 16 dni)
+function weatherBlock(dateStr) {
+  const w = dateStr ? WX_BY_DATE[dateStr] : null;
+  if (!w) {
+    return (
+      `<div class="wx-block panel">` +
+      `<div class="wx-block__row"><span class="wx-block__k">🌡️ Prognoza</span>` +
+      `<span class="wx-block__v wx-block__v--dim">pokaże się, gdy data wejdzie w okno 16 dni (odświeżamy codziennie)</span></div>` +
+      `</div>`
+    );
+  }
+  const sev = wxSeverity(w);
+  const sevLabel =
+    sev === "storm" ? "⛈ Burza — bądź ostrożna"
+      : sev === "rain" ? "☔ Deszcz — weź parasol"
+        : sev === "hot" ? "🔥 Upał — pij wodę, kapelusz"
+          : "";
+  return (
+    `<div class="wx-block panel">` +
+    `<div class="wx-block__row"><span class="wx-block__k">🌡️ Prognoza</span>` +
+    `<span class="wx-block__v">${w.icon} ${escapeHtml(w.label)}</span></div>` +
+    `<div class="wx-block__row"><span class="wx-block__k">Temperatura</span>` +
+    `<span class="wx-block__v">${w.tmin}° / ${w.tmax}°C</span></div>` +
+    (sevLabel ? `<div class="wx-block__alert">${sevLabel}</div>` : "") +
+    `</div>`
   );
 }
 
@@ -905,6 +959,7 @@ function renderDay(city, day) {
     `</div>` +
     (day.theme ? `<div class="detail__body" style="padding-bottom:0"><div class="tip"><div class="tip__title">Temat dnia</div><p>${escapeHtml(day.theme)}</p></div></div>` : "") +
     `<div class="detail__body">` +
+    weatherBlock(day.date) +
     driveBlock +
     (day.items.length ? `<div class="section__head" style="padding-left:0"><h2 class="section__title" style="font-size:var(--fs-xl)">Plan dnia</h2></div><div class="info-table panel">${itemList}</div>` : "") +
     (day.attractions.length ? `<div class="section__head" style="padding-left:0"><h2 class="section__title" style="font-size:var(--fs-xl)">Atrakcje</h2></div>${attractionCards}` : "") +

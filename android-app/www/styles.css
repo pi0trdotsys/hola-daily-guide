@@ -995,6 +995,54 @@ button {
   letter-spacing: 0.01em;
 }
 
+/* pełny blok pogody w widoku dnia */
+.wx-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.8rem 0.9rem;
+  margin-bottom: 0.8rem;
+  background: linear-gradient(120deg, rgba(77, 212, 224, 0.08), rgba(255, 180, 84, 0.06));
+  border-color: rgba(77, 212, 224, 0.35);
+}
+
+.wx-block__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: var(--fs-md);
+}
+
+.wx-block__k {
+  color: var(--muted);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.wx-block__v {
+  font-weight: 800;
+  color: var(--text);
+  text-align: right;
+}
+
+.wx-block__v--dim {
+  font-weight: 600;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+}
+
+.wx-block__alert {
+  padding: 0.45rem 0.65rem;
+  border-radius: 10px;
+  background: var(--spain-red-soft);
+  border: 1px solid var(--spain-red);
+  color: var(--spain-red);
+  font-weight: 800;
+  font-size: var(--fs-sm);
+}
+
 /* znaczniki dla wszystkich chipów pogody (scanline minimal effect) */
 .wx-chip {
   position: relative;
